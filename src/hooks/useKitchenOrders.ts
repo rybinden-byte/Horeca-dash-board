@@ -70,7 +70,7 @@ export function useKitchenOrders(locationId: string | undefined) {
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      void supabase.removeChannel(channel);
+      void client.removeChannel(channel);
     };
   }, [locationId, scheduleReload]);
 

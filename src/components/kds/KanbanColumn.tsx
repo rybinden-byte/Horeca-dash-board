@@ -9,6 +9,7 @@ interface Props {
   onMoveToReady: (id: string) => void;
   onBackToNew: (id: string) => void;
   onBackToPrep: (id: string) => void;
+  onCompleteOrder: (id: string) => void;
 }
 
 export function KanbanColumn({
@@ -19,6 +20,7 @@ export function KanbanColumn({
   onMoveToReady,
   onBackToNew,
   onBackToPrep,
+  onCompleteOrder,
 }: Props) {
   return (
     <section className="kanban-column" data-status={status} aria-label={title}>
@@ -27,16 +29,21 @@ export function KanbanColumn({
         <span className="kanban-column__count">{orders.length}</span>
       </header>
       <div className="kanban-column__body">
-        {orders.map((o) => (
-          <OrderCard
-            key={o.id}
-            order={o}
-            onMoveToPrep={onMoveToPrep}
-            onMoveToReady={onMoveToReady}
-            onBackToNew={onBackToNew}
-            onBackToPrep={onBackToPrep}
-          />
-        ))}
+        {orders.length === 0 ? (
+          <div className="kanban-column__empty">No orders.</div>
+        ) : (
+          orders.map((o) => (
+            <OrderCard
+              key={o.id}
+              order={o}
+              onMoveToPrep={onMoveToPrep}
+              onMoveToReady={onMoveToReady}
+              onBackToNew={onBackToNew}
+              onBackToPrep={onBackToPrep}
+              onCompleteOrder={onCompleteOrder}
+            />
+          ))
+        )}
       </div>
     </section>
   );

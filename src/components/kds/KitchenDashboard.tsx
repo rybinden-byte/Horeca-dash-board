@@ -1,9 +1,7 @@
-import { useCallback, useMemo, useState } from 'react';
-import { KANBAN_COLUMNS, type OrderStatus } from '../../types/kds';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { KANBAN_COLUMNS } from '../../types/kds';
 import { useKitchenOrders } from '../../hooks/useKitchenOrders';
-import { isSupabaseConfigured, supabase, updateOrderStatus } from '../../lib/supabase';
 import { KanbanColumn } from './KanbanColumn';
-import { mockOrders } from './mockData';
 
 interface Props {
   locationId: string;
@@ -11,12 +9,47 @@ interface Props {
 }
 
 export function KitchenDashboard({ locationId, brandTitle = "Rybin's Family — KDS" }: Props) {
-  const { orders: liveOrders, loading, error: bootstrapError, reload } = useKitchenOrders(
-    supabase ? locationId : undefined
-  );
-  const [localError, setLocalError] = useState<string | null>(null);
+  const { orders, loading, error, demoMode, reload, setOrderStatus, addDemoOrder, resetDemoOrders } =
+    useKitchenOrders(locationId);
 
-  const orders = supabase ? liveOrders : mockOrders;
+  const [demoToast, setDemoToast] = useState<{ visible: boolean; text: string }>({ visible: false, text: '' });
+  const prevOrderIdsRef = useRef<Set<string>>(new Set());
+  const lastAddedOrderIdRef = useRef<string | null>(null);
+
+  const playNewOrderSound = useCallback(() => {
+    // Called from a user click handler (Add Demo Order), so autoplay restrictions should not block it.
+    try {
+      const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!Ctx) return;
+      const ctx = new Ctx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.value = 0.05;
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      const t0 = ctx.currentTime;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.08, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+
+      osc.start(t0);
+      osc.stop(t0 + 0.22);
+
+      window.setTimeout(() => void ctx.close().catch(() => {}), 300);
+    } catch {
+      // No-op: sound is optional.
+    }
+  }, []);
+
+  const showDemoToast = useCallback((text: string) => {
+    setDemoToast({ visible: true, text });
+    window.setTimeout(() => setDemoToast((t) => ({ ...t, visible: false })), 2600);
+  }, []);
 
   const byStatus = useMemo(() => {
     const map: Record<string, typeof orders> = { new: [], prep: [], ready: [] };
@@ -28,37 +61,58 @@ export function KitchenDashboard({ locationId, brandTitle = "Rybin's Family — 
     return map;
   }, [orders]);
 
-  const move = useCallback(
-    async (id: string, status: OrderStatus, timestamps?: { prep?: boolean; ready?: boolean }) => {
-      setLocalError(null);
-      if (!supabase) return;
-      try {
-        const extra: { prep_started_at?: string | null; ready_at?: string | null } = {};
-        if (timestamps?.prep) extra.prep_started_at = new Date().toISOString();
-        if (timestamps?.ready) extra.ready_at = new Date().toISOString();
-        if (status === 'new') {
-          extra.prep_started_at = null;
-          extra.ready_at = null;
-        }
-        if (status === 'prep' && !timestamps?.ready) {
-          extra.ready_at = null;
-        }
-        await updateOrderStatus(id, status, extra);
-        await reload();
-      } catch (e) {
-        setLocalError(e instanceof Error ? e.message : String(e));
-      }
-    },
-    [reload]
-  );
+  // Realtime / realtime-like notification: detect newly inserted order ids.
+  useEffect(() => {
+    const currentIds = new Set(orders.map((o) => o.id));
+    const prev = prevOrderIdsRef.current;
 
-  const onMoveToPrep = useCallback((id: string) => move(id, 'prep', { prep: true }), [move]);
-  const onMoveToReady = useCallback((id: string) => move(id, 'ready', { ready: true }), [move]);
-  const onBackToNew = useCallback((id: string) => move(id, 'new'), [move]);
-  const onBackToPrep = useCallback(
-    (id: string) => move(id, 'prep', { prep: false }),
-    [move]
-  );
+    // Ignore first successful load.
+    if (prev.size === 0) {
+      prevOrderIdsRef.current = currentIds;
+      return;
+    }
+
+    const inserted = orders.filter((o) => !prev.has(o.id));
+    prevOrderIdsRef.current = currentIds;
+
+    if (!inserted.length) return;
+
+    const newest = inserted.reduce((acc, o) => {
+      const accMs = new Date(acc.created_at).getTime();
+      const oMs = new Date(o.created_at).getTime();
+      return oMs > accMs ? o : acc;
+    }, inserted[0]);
+
+    // Only notify about "new" column items.
+    if (newest.status !== 'new') return;
+
+    // Avoid double-notification when user clicked Add Demo Order.
+    if (lastAddedOrderIdRef.current && lastAddedOrderIdRef.current === newest.id) {
+      lastAddedOrderIdRef.current = null;
+      return;
+    }
+
+    showDemoToast(`New order #${newest.display_number}`);
+    playNewOrderSound();
+  }, [orders, playNewOrderSound, showDemoToast]);
+
+  const onMoveToPrep = useCallback((id: string) => void setOrderStatus(id, 'prep'), [setOrderStatus]);
+  const onMoveToReady = useCallback((id: string) => void setOrderStatus(id, 'ready'), [setOrderStatus]);
+  const onBackToNew = useCallback((id: string) => void setOrderStatus(id, 'new'), [setOrderStatus]);
+  const onBackToPrep = useCallback((id: string) => void setOrderStatus(id, 'prep'), [setOrderStatus]);
+  const onCompleteOrder = useCallback((id: string) => void setOrderStatus(id, 'served'), [setOrderStatus]);
+
+  const onAddDemoOrder = useCallback(() => {
+    const o = addDemoOrder();
+    lastAddedOrderIdRef.current = o.id;
+    showDemoToast(`Новий демо-ордeр #${o.display_number}`);
+    playNewOrderSound();
+  }, [addDemoOrder, playNewOrderSound, showDemoToast]);
+
+  const onResetDemoOrders = useCallback(() => {
+    resetDemoOrders();
+    showDemoToast('Демо-замовлення скинуто');
+  }, [resetDemoOrders, showDemoToast]);
 
   return (
     <div className="kds-root">
@@ -74,26 +128,49 @@ export function KitchenDashboard({ locationId, brandTitle = "Rybin's Family — 
         </div>
         <div className="kds-topbar__meta">
           {loading && <span className="kds-badge">Оновлення…</span>}
-          {isSupabaseConfigured && !bootstrapError && !loading && (
+          {demoMode ? (
+            <span className="kds-badge kds-badge--warn">Demo Mode</span>
+          ) : (
             <span className="kds-badge kds-badge--ok">Онлайн · Supabase</span>
           )}
-          {!isSupabaseConfigured && (
-            <span className="kds-badge kds-badge--warn">Демо без Supabase</span>
-          )}
-          {bootstrapError && (
-            <span className="kds-badge kds-badge--error" title={bootstrapError.message}>
-              Помилка завантаження
+
+          {error && (
+            <span className="kds-badge kds-badge--error" title={error.message}>
+              Помилка
             </span>
           )}
-          {localError && (
-            <span className="kds-badge kds-badge--error" title={localError}>
-              Помилка збереження
-            </span>
-          )}
+
+          <button
+            type="button"
+            className="touch-btn touch-btn--primary kds-topbar__action"
+            onClick={onAddDemoOrder}
+          >
+            Add Demo Order
+          </button>
+          <button
+            type="button"
+            className="touch-btn touch-btn--ghost kds-topbar__action"
+            onClick={onResetDemoOrders}
+          >
+            Reset Demo Orders
+          </button>
+
+          <button
+            type="button"
+            className="touch-btn touch-btn--ghost kds-topbar__action"
+            onClick={() => void reload()}
+          >
+            Refresh
+          </button>
         </div>
       </header>
 
       <main className="kds-board" role="main">
+        {demoToast.visible ? (
+          <div className="kds-demo-toast kds-demo-toast--visible" role="status" aria-live="polite">
+            {demoToast.text}
+          </div>
+        ) : null}
         {KANBAN_COLUMNS.map((col) => (
           <KanbanColumn
             key={col.status}
@@ -104,6 +181,7 @@ export function KitchenDashboard({ locationId, brandTitle = "Rybin's Family — 
             onMoveToReady={onMoveToReady}
             onBackToNew={onBackToNew}
             onBackToPrep={onBackToPrep}
+            onCompleteOrder={onCompleteOrder}
           />
         ))}
       </main>

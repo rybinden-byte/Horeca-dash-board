@@ -36,7 +36,7 @@ export interface OrderRow {
 }
 
 export const KANBAN_COLUMNS: { status: Exclude<OrderStatus, 'served' | 'cancelled'>; title: string }[] = [
-  { status: 'new', title: 'Нові' },
-  { status: 'prep', title: 'Готуємо' },
-  { status: 'ready', title: 'Готово' },
+  { status: 'new', title: 'New' },
+  { status: 'prep', title: 'Prep' },
+  { status: 'ready', title: 'Ready' },
 ];

@@ -1,24 +1,25 @@
 :root {
-  --bg: #0a0c10;
-  --bg-elevated: #12151c;
-  --surface: #181c26;
-  --surface-hover: #1f2430;
-  --border: #2a3140;
-  --text: #f2f5fb;
-  --text-muted: #8b95a8;
-  --accent: #f4a51c;
-  --accent-hover: #ffc14a;
-  --accent-pressed: #c77f0a;
-  --success: #3dd68c;
-  --danger: #ff5c5c;
+  --bg: #0F172A;
+  --bg-elevated: #0F172A;
+  --surface: #1E293B;
+  --surface-hover: #243446;
+  --border: #334155;
+  --text: #F8FAFC;
+  --text-muted: #CBD5E1;
+  --accent: #F97316;
+  --accent-hover: #FB9B55;
+  --accent-pressed: #C2410C;
+  --success: #22C55E;
+  --warning: #FACC15;
+  --danger: #EF4444;
   --column-new: #1e3a5f;
   --column-prep: #3d2f1a;
   --column-ready: #1a3d2e;
   --shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-  --radius: 14px;
-  --radius-sm: 10px;
-  --font: 'DM Sans', system-ui, -apple-system, sans-serif;
-  --touch-min: 52px;
+  --radius: 18px;
+  --radius-sm: 16px;
+  --font: Inter, system-ui, -apple-system, sans-serif;
+  --touch-min: 56px;
 }
 
 *,
@@ -103,6 +104,11 @@ body {
   flex-wrap: wrap;
 }
 
+.kds-topbar__action {
+  flex: 0 0 auto;
+  min-width: 180px;
+}
+
 .kds-badge {
   font-size: 0.8rem;
   font-weight: 600;
@@ -141,7 +147,18 @@ body {
 
 @media (max-width: 1100px) {
   .kds-board {
+    grid-template-columns: repeat(3, minmax(320px, 320px));
+    justify-content: start;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+}
+
+@media (max-width: 640px) {
+  .kds-board {
     grid-template-columns: 1fr;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 }
 
@@ -158,18 +175,18 @@ body {
 }
 
 .kanban-column[data-status='new'] {
-  border-color: rgba(100, 160, 255, 0.35);
-  background: linear-gradient(180deg, rgba(30, 58, 95, 0.35) 0%, var(--surface) 120px);
+  border-color: rgba(249, 115, 22, 0.45);
+  background: linear-gradient(180deg, rgba(249, 115, 22, 0.22) 0%, var(--surface) 120px);
 }
 
 .kanban-column[data-status='prep'] {
-  border-color: rgba(244, 165, 28, 0.4);
-  background: linear-gradient(180deg, rgba(61, 47, 26, 0.5) 0%, var(--surface) 120px);
+  border-color: rgba(250, 204, 21, 0.45);
+  background: linear-gradient(180deg, rgba(250, 204, 21, 0.18) 0%, var(--surface) 120px);
 }
 
 .kanban-column[data-status='ready'] {
-  border-color: rgba(61, 214, 140, 0.4);
-  background: linear-gradient(180deg, rgba(26, 61, 46, 0.45) 0%, var(--surface) 120px);
+  border-color: rgba(34, 197, 94, 0.45);
+  background: linear-gradient(180deg, rgba(34, 197, 94, 0.18) 0%, var(--surface) 120px);
 }
 
 .kanban-column__head {
@@ -183,7 +200,7 @@ body {
 
 .kanban-column__title {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.6rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -212,6 +229,16 @@ body {
   overflow-y: auto;
 }
 
+.kanban-column__empty {
+  padding: 1.2rem 0.9rem;
+  border-radius: 14px;
+  border: 1px dashed rgba(51, 65, 85, 0.9);
+  background: rgba(30, 41, 59, 0.35);
+  color: var(--text-muted);
+  font-weight: 800;
+  text-align: center;
+}
+
 /* ——— Order card ——— */
 .order-card {
   border-radius: var(--radius-sm);
@@ -225,13 +252,13 @@ body {
 
 .order-card__header {
   display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0.5rem 0.75rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55rem;
 }
 
 .order-card__number {
-  font-size: 1.45rem;
+  font-size: 1.62rem;
   font-weight: 700;
   letter-spacing: -0.03em;
   color: var(--text);
@@ -305,7 +332,7 @@ body {
 
 .order-card__name {
   font-weight: 600;
-  font-size: 1.02rem;
+  font-size: 1.18rem;
 }
 
 .order-card__station {
@@ -337,7 +364,7 @@ body {
   display: flex;
   align-items: flex-start;
   gap: 0.45rem;
-  font-size: 0.88rem;
+  font-size: 0.98rem;
   padding: 0.35rem 0.55rem;
   border-radius: 8px;
   border: 1px solid transparent;
@@ -453,4 +480,211 @@ body {
 .touch-btn--ghost:hover {
   background: var(--surface-hover);
   border-color: var(--text-muted);
+}
+
+/* ——— KDS Demo toast ——— */
+.kds-demo-toast {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 90px;
+  z-index: 50;
+  margin: 0 auto;
+  width: calc(100% - 2rem);
+  max-width: 520px;
+  opacity: 0;
+  transform: translateY(-10px) scale(0.98);
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.kds-demo-toast--visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.kds-demo-toast {
+  color: var(--text);
+}
+
+.kds-demo-toast::before {
+  content: '';
+  display: block;
+  height: 0;
+}
+
+.kds-demo-toast > * {
+  display: inline-block;
+}
+
+/* render the toast box */
+.kds-demo-toast {
+  padding: 0;
+}
+
+.kds-demo-toast:not(:empty) {
+  border-radius: 16px;
+  border: 1px solid rgba(244, 165, 28, 0.45);
+  background: rgba(30, 41, 59, 0.95);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+  padding: 1rem 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+/* ——— Order card new topline layout ——— */
+.order-card {
+  position: relative;
+}
+
+.order-card__topline {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.order-card__metarow {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.order-card__badges {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.order-status {
+  padding: 0.25rem 0.55rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-weight: 900;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+}
+
+.order-status--new {
+  background: rgba(249, 115, 22, 0.12);
+  border-color: rgba(249, 115, 22, 0.4);
+  color: var(--text);
+}
+.order-status--prep {
+  background: rgba(250, 204, 21, 0.12);
+  border-color: rgba(250, 204, 21, 0.42);
+  color: var(--text);
+}
+.order-status--ready {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.42);
+  color: var(--text);
+}
+.order-status--served {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.42);
+  color: var(--text);
+}
+.order-status--cancelled {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.42);
+  color: var(--text);
+}
+
+.order-urgency {
+  padding: 0.25rem 0.55rem;
+  border-radius: 10px;
+  font-weight: 950;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+}
+.order-urgency--normal {
+  background: rgba(51, 65, 85, 0.65);
+  border: 1px solid rgba(51, 65, 85, 0.7);
+  color: var(--text-muted);
+}
+.order-urgency--warning {
+  background: rgba(250, 204, 21, 0.16);
+  border: 1px solid rgba(250, 204, 21, 0.45);
+  color: #111827;
+}
+.order-urgency--urgent {
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.55);
+  color: #fff;
+}
+
+/* urgency color strip (left) */
+.order-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  border-top-left-radius: var(--radius-sm);
+  border-bottom-left-radius: var(--radius-sm);
+  background: transparent;
+}
+.order-card--urgency-warning::before {
+  background: var(--warning);
+}
+.order-card--urgency-urgent::before {
+  background: var(--danger);
+}
+
+.order-type-badge {
+  padding: 0.4rem 0.65rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-hover);
+  font-weight: 900;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.order-type-badge--dine_in {
+  border-color: rgba(249, 115, 22, 0.45);
+  background: rgba(249, 115, 22, 0.12);
+}
+.order-type-badge--takeaway {
+  border-color: rgba(250, 204, 21, 0.45);
+  background: rgba(250, 204, 21, 0.12);
+}
+.order-type-badge--delivery {
+  border-color: rgba(34, 197, 94, 0.45);
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.order-table-badge {
+  padding: 0.4rem 0.65rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(15, 23, 42, 0.5);
+  font-weight: 900;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.order-elapsed {
+  display: block;
+  font-weight: 950;
+  color: var(--text);
+  font-size: 0.98rem;
+}
+
+.order-created {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* Ensure action buttons in the topbar keep readable widths */
+.kds-topbar__action.touch-btn {
+  flex: 0 0 auto;
 }

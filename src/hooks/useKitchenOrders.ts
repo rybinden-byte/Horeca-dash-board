@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+
 import type { OrderRow } from '../types/kds';
 import { fetchOrdersWithItems, supabase } from '../lib/supabase';
 
@@ -16,8 +17,10 @@ export function useKitchenOrders(locationId: string | undefined) {
       setLoading(false);
       return;
     }
+
     setLoading(true);
     setError(null);
+
     try {
       const data = await fetchOrdersWithItems(locationId);
       setOrders(data);
@@ -30,7 +33,9 @@ export function useKitchenOrders(locationId: string | undefined) {
 
   const scheduleReload = useCallback(() => {
     if (!locationId || !supabase) return;
+
     if (debounceRef.current) clearTimeout(debounceRef.current);
+
     debounceRef.current = setTimeout(() => {
       debounceRef.current = null;
       void load();
@@ -42,9 +47,11 @@ export function useKitchenOrders(locationId: string | undefined) {
   }, [load]);
 
   useEffect(() => {
-    if (!locationId || !supabase) return;
+    const client = supabase;
 
-    const channel = supabase
+    if (!locationId || !client) return;
+
+    const channel = client
       .channel(`kds:${locationId}`)
       .on(
         'postgres_changes',
